@@ -69,6 +69,7 @@ import org.apache.flink.sql.parser.dql.SqlShowJars;
 import org.apache.flink.sql.parser.dql.SqlShowModules;
 import org.apache.flink.sql.parser.dql.SqlShowPartitions;
 import org.apache.flink.sql.parser.dql.SqlShowTables;
+import org.apache.flink.sql.parser.dql.SqlShowVersions;
 import org.apache.flink.sql.parser.dql.SqlShowViews;
 import org.apache.flink.sql.parser.dql.SqlUnloadModule;
 import org.apache.flink.table.api.Schema;
@@ -110,6 +111,7 @@ import org.apache.flink.table.operations.ShowFunctionsOperation.FunctionScope;
 import org.apache.flink.table.operations.ShowModulesOperation;
 import org.apache.flink.table.operations.ShowPartitionsOperation;
 import org.apache.flink.table.operations.ShowTablesOperation;
+import org.apache.flink.table.operations.ShowVersionsOperation;
 import org.apache.flink.table.operations.ShowViewsOperation;
 import org.apache.flink.table.operations.UnloadModuleOperation;
 import org.apache.flink.table.operations.UseCatalogOperation;
@@ -256,6 +258,8 @@ public class SqlToOperationConverter {
             return Optional.of(converter.convertAlterTable((SqlAlterTable) validated));
         } else if (validated instanceof SqlShowTables) {
             return Optional.of(converter.convertShowTables((SqlShowTables) validated));
+        } else if (validated instanceof SqlShowVersions) {
+            return Optional.of(converter.convertShowVersions((SqlShowVersions) validated));
         } else if (validated instanceof SqlCreateView) {
             return Optional.of(converter.convertCreateView((SqlCreateView) validated));
         } else if (validated instanceof SqlDropView) {
@@ -823,6 +827,11 @@ public class SqlToOperationConverter {
     /** Convert SHOW TABLES statement. */
     private Operation convertShowTables(SqlShowTables sqlShowTables) {
         return new ShowTablesOperation();
+    }
+
+    /** Convert SHOW VERSIONS statement. */
+    private Operation convertShowVersions(SqlShowVersions sqlShowVersions) {
+        return new ShowVersionsOperation();
     }
 
     /** Convert SHOW CREATE TABLE statement. */

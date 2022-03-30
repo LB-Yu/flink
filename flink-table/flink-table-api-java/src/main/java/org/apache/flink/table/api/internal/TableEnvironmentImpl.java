@@ -100,6 +100,7 @@ import org.apache.flink.table.operations.ShowFunctionsOperation;
 import org.apache.flink.table.operations.ShowModulesOperation;
 import org.apache.flink.table.operations.ShowPartitionsOperation;
 import org.apache.flink.table.operations.ShowTablesOperation;
+import org.apache.flink.table.operations.ShowVersionsOperation;
 import org.apache.flink.table.operations.ShowViewsOperation;
 import org.apache.flink.table.operations.TableSourceQueryOperation;
 import org.apache.flink.table.operations.UnloadModuleOperation;
@@ -1191,6 +1192,8 @@ public class TableEnvironmentImpl implements TableEnvironmentInternal {
             }
         } else if (operation instanceof ShowTablesOperation) {
             return buildShowResult("table name", listTables());
+        } else if (operation instanceof ShowVersionsOperation) {
+            return buildShowResult("versions", new String[] {"1.14.4"});
         } else if (operation instanceof ShowFunctionsOperation) {
             ShowFunctionsOperation showFunctionsOperation = (ShowFunctionsOperation) operation;
             String[] functionNames = null;

@@ -1755,6 +1755,19 @@ SqlShowJars SqlShowJars() :
     }
 }
 
+/**
+* Parse a "Show Versions" command.
+*/
+SqlShowVersions SqlShowVersions() :
+{
+}
+{
+    <SHOW> <VERSIONS>
+    {
+        return new SqlShowVersions(getPos());
+    }
+}
+
 /*
 * Parses a SET statement:
 * SET ['key' = 'value'];
