@@ -28,6 +28,8 @@ import org.apache.flink.table.types.logical.LogicalTypeRoot;
 import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -38,6 +40,9 @@ import java.util.regex.Pattern;
  * <p>The final conversion step converts those into internal data structures.
  */
 public final class ChangelogCsvDeserializer implements DeserializationSchema<RowData> {
+
+    private static final DateTimeFormatter DATE_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final List<LogicalType> parsingTypes;
     private final DataStructureConverter converter;
@@ -86,6 +91,8 @@ public final class ChangelogCsvDeserializer implements DeserializationSchema<Row
                 return Integer.parseInt(value);
             case VARCHAR:
                 return value;
+            case TIMESTAMP_WITHOUT_TIME_ZONE:
+                return LocalDateTime.parse(value, DATE_TIME_FORMATTER);
             default:
                 throw new IllegalArgumentException();
         }
