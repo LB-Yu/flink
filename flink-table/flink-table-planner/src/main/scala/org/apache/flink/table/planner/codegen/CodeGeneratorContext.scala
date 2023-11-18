@@ -145,6 +145,14 @@ class CodeGeneratorContext(val tableConfig: ReadableConfig, val classLoader: Cla
   private val reusableLocalVariableStatements = mutable.Map[String, mutable.LinkedHashSet[String]](
     (currentMethodNameForLocalVariables, mutable.LinkedHashSet[String]()))
 
+  // map of scalar eval code.
+  // scala_eval_code -> reusable_term
+  private val reusableScalaFuncExprs: mutable.Map[String, String] =
+    mutable.Map[String, String]()
+
+  private val reusableResultTerms: mutable.Map[String, String] =
+    mutable.Map[String, String]()
+
   /** the class is used as the  generated operator code's base class. */
   private var operatorBaseClass: Class[_] = classOf[TableStreamOperator[_]]
 
@@ -377,6 +385,14 @@ class CodeGeneratorContext(val tableConfig: ReadableConfig, val classLoader: Cla
              |""".stripMargin
       }
       .mkString("\n")
+  }
+
+  def reuseScalarFuncExpr(code: String): String = {
+    reusableScalaFuncExprs.getOrElse(code, code)
+  }
+
+  def reuseResultTerm(term: String): String = {
+    reusableResultTerms.getOrElse(term, term)
   }
 
   def setOperatorBaseClass(operatorBaseClass: Class[_]): CodeGeneratorContext = {
@@ -1050,5 +1066,17 @@ class CodeGeneratorContext(val tableConfig: ReadableConfig, val classLoader: Cla
     reusableInitStatements.add(nullableInit)
 
     fieldTerm
+  }
+
+  def addReusableScalarFuncExpr(code: String, term: String): Unit = {
+    if (!reusableScalaFuncExprs.contains(code)) {
+      reusableScalaFuncExprs.put(code, term);
+    }
+  }
+
+  def addReusableResultTerm(term: String, originalTerm: String): Unit = {
+    if (!reusableResultTerms.contains(term)) {
+      reusableResultTerms.put(term, originalTerm)
+    }
   }
 }
