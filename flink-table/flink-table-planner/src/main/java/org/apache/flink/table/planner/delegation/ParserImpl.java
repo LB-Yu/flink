@@ -33,6 +33,7 @@ import org.apache.flink.table.planner.expressions.RexNodeExpression;
 import org.apache.flink.table.planner.operations.SqlNodeToOperationConversion;
 import org.apache.flink.table.planner.parse.CalciteParser;
 import org.apache.flink.table.planner.parse.ExtendedParser;
+import org.apache.flink.table.planner.utils.OperationsConverter;
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.RowType;
 import org.apache.flink.table.types.utils.TypeConversions;
@@ -50,6 +51,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -105,6 +107,16 @@ public class ParserImpl implements Parser {
         return Collections.singletonList(
                 SqlNodeToOperationConversion.convert(planner, catalogManager, parsed.get(0))
                         .orElseThrow(() -> new TableException("Unsupported query: " + statement)));
+    }
+
+    @Override
+    public Iterator<Operation> parseStatements(String statements) {
+        CalciteParser parser = calciteParserSupplier.get();
+        FlinkPlannerImpl planner = validatorSupplier.get();
+
+        // parse the sql statements
+        SqlNodeList sqlNodes = parser.parseSqlList(statements);
+        return new OperationsConverter(sqlNodes, planner, catalogManager);
     }
 
     @Override

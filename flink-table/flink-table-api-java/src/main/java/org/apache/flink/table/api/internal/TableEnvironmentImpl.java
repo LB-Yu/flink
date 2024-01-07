@@ -126,6 +126,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -733,6 +734,19 @@ public class TableEnvironmentImpl implements TableEnvironmentInternal {
 
         Operation operation = operations.get(0);
         return executeInternal(operation);
+    }
+
+    @Override
+    public List<TableResult> executeStatements(String statements) {
+        Iterator<Operation> operations = getParser().parseStatements(statements);
+
+        List<TableResult> results = new ArrayList<>();
+        while (operations.hasNext()) {
+            Operation operation = operations.next();
+            TableResultInternal result = executeInternal(operation);
+            results.add(result);
+        }
+        return results;
     }
 
     @Override

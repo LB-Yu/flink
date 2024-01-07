@@ -28,6 +28,7 @@ import org.apache.flink.table.types.logical.RowType;
 
 import javax.annotation.Nullable;
 
+import java.util.Iterator;
 import java.util.List;
 
 /** Provides methods for parsing SQL objects from a SQL string. */
@@ -47,6 +48,19 @@ public interface Parser {
      * @throws org.apache.flink.table.api.SqlParserException when failed to parse the statement
      */
     List<Operation> parse(String statement);
+
+    /**
+     * Entry point for parsing SQL job script expressed as a String.
+     *
+     * <p>The produced Operation trees should already be validated.
+     *
+     * @param statements the SQL job script to evaluate
+     * @return parsed sql script as trees of relational {@link Operation}s
+     * @throws org.apache.flink.table.api.SqlParserException when failed to parse the statement
+     */
+    default Iterator<Operation> parseStatements(String statements) {
+        return parse(statements).iterator();
+    }
 
     /**
      * Entry point for parsing SQL identifiers expressed as a String.

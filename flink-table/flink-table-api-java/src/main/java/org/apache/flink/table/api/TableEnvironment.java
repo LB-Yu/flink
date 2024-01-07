@@ -1065,6 +1065,14 @@ public interface TableEnvironment {
     TableResult executeSql(String statement);
 
     /**
+     * Executes the given statements and returns the execution results.
+     *
+     * <p>The statements must be a complete sql job containing a submittable <code>INSERT INTO
+     * </code> statement. DDL statements will be executed first in the order defined.
+     */
+    List<TableResult> executeStatements(String statements);
+
+    /**
      * Gets the current default catalog name of the current session.
      *
      * @return The current default catalog name that is used for the path resolution.
