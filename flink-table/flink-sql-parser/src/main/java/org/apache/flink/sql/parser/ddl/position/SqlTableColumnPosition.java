@@ -81,6 +81,11 @@ public class SqlTableColumnPosition extends SqlCall {
         return referencedColumn;
     }
 
+    @Nullable
+    public String getAfterReferencedColumnName() {
+        return referencedColumn != null ? referencedColumn.getSimple() : null;
+    }
+
     @Nonnull
     @Override
     public SqlOperator getOperator() {

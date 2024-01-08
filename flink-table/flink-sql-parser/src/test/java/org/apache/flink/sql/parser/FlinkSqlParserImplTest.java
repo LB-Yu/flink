@@ -2563,6 +2563,32 @@ class FlinkSqlParserImplTest extends SqlParserTest {
     }
 
     @Test
+    void testCreateTableAsTable() {
+        sql("CREATE TABLE t AS TABLE B").ok("CREATE TABLE `T`\nAS TABLE `B`");
+    }
+
+    @Test
+    void testCreateTableAsTableWithHints() {
+        sql("CREATE TABLE t WITH ('test' = 'lb') AS TABLE B /*+ OPTIONS('key' = 'val') */")
+                .ok(
+                        "CREATE TABLE `T` WITH (\n  'test' = 'lb'\n)\nAS TABLE `B`\n/*+ `OPTIONS`('key' = 'val') */");
+    }
+
+    @Test
+    void testCreateTableAsTableWithHintsAndComputedColumn() {
+        sql("CREATE TABLE t WITH ('test' = 'lb') AS TABLE B /*+ OPTIONS('key' = 'val') */ ADD hours AS HOUR(tstmp)")
+                .ok(
+                        "CREATE TABLE `T` WITH (\n  'test' = 'lb'\n)\nAS TABLE `B`\n/*+ `OPTIONS`('key' = 'val') */\nADD `HOURS` AS HOUR(`TSTMP`)");
+    }
+
+    @Test
+    void testCreateTableAsTableWithHintsAndComputedColumns() {
+        sql("CREATE TABLE t WITH ('test' = 'lb') AS TABLE B /*+ OPTIONS('key' = 'val') */ ADD (hours AS HOUR(tstmp) FIRST, minutes AS MINUTE(tstmp) AFTER hours, seconds AS SECOND(tstmp) AFTER minutes)")
+                .ok(
+                        "CREATE TABLE `T` WITH (\n  'test' = 'lb'\n)\nAS TABLE `B`\n/*+ `OPTIONS`('key' = 'val') */\nADD (\n  `HOURS` AS HOUR(`TSTMP`) FIRST,\n  `MINUTES` AS MINUTE(`TSTMP`) AFTER `HOURS`,\n  `SECONDS` AS SECOND(`TSTMP`) AFTER `MINUTES`\n)");
+    }
+
+    @Test
     void testReplaceTableAsSelect() {
         // test replace table as select without options
         sql("REPLACE TABLE t AS SELECT * FROM b").ok("REPLACE TABLE `T`\nAS\nSELECT *\nFROM `B`");

@@ -1313,12 +1313,15 @@ SqlCreate SqlCreateTable(Span s, boolean replace, boolean isTemporary) :
     final SqlParserPos startPos = s.pos();
     boolean ifNotExists = false;
     SqlIdentifier tableName;
+    SqlIdentifier sourceTableName;
     List<SqlTableConstraint> constraints = new ArrayList<SqlTableConstraint>();
     SqlWatermark watermark = null;
     SqlNodeList columnList = SqlNodeList.EMPTY;
 	SqlCharStringLiteral comment = null;
 	SqlTableLike tableLike = null;
     SqlNode asQuery = null;
+    SqlNode asTable = null;
+    List<SqlNode> asTableAddColumns = new ArrayList<SqlNode>();
 
     SqlNodeList propertyList = SqlNodeList.EMPTY;
     SqlNodeList partitionColumns = SqlNodeList.EMPTY;
@@ -1374,7 +1377,29 @@ SqlCreate SqlCreateTable(Span s, boolean replace, boolean isTemporary) :
         }
     |
         <AS>
-        asQuery = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
+        (
+            <TABLE>
+            sourceTableName = CompoundTableIdentifier()
+            ( asTable = TableHints(sourceTableName) | { asTable = sourceTableName; } )
+            [
+                <ADD> { AlterTableContext ctx = new AlterTableContext(); }
+                    (
+                        AddOrModifyColumn(ctx)
+                    |
+                        <LPAREN>
+                            AddOrModifyColumn(ctx)
+                            (
+                                <COMMA> AddOrModifyColumn(ctx)
+                            )*
+                        <RPAREN>
+                    )
+                    {
+                        asTableAddColumns = ctx.columnPositions;
+                    }
+            ]
+        |
+            asQuery = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
+        )
         {
             if (replace) {
                 return new SqlReplaceTableAs(startPos.plus(getPos()),
@@ -1399,6 +1424,8 @@ SqlCreate SqlCreateTable(Span s, boolean replace, boolean isTemporary) :
                     watermark,
                     comment,
                     asQuery,
+                    asTable,
+                    asTableAddColumns,
                     isTemporary,
                     ifNotExists);
             }

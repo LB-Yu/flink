@@ -18,6 +18,7 @@
 
 package org.apache.flink.sql.parser.ddl;
 
+import org.apache.flink.sql.parser.SqlUnparseUtils;
 import org.apache.flink.sql.parser.ddl.constraint.SqlTableConstraint;
 import org.apache.flink.sql.parser.error.SqlValidateException;
 
@@ -28,6 +29,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
+import org.apache.calcite.sql.SqlTableRef;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
@@ -36,8 +38,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import java.util.List;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * {@link SqlNode} to describe the CREATE TABLE AS syntax. The CTAS would create a pipeline to
@@ -72,6 +72,10 @@ public class SqlCreateTableAs extends SqlCreateTable {
             new SqlSpecialOperator("CREATE TABLE AS", SqlKind.CREATE_TABLE);
 
     private final SqlNode asQuery;
+    private final SqlNode asTable;
+    private final SqlIdentifier asTableIdentifier;
+    private final SqlNodeList asTableHints;
+    private final List<SqlNode> asTableAddColumns;
 
     public SqlCreateTableAs(
             SqlParserPos pos,
@@ -83,6 +87,8 @@ public class SqlCreateTableAs extends SqlCreateTable {
             @Nullable SqlWatermark watermark,
             @Nullable SqlCharStringLiteral comment,
             SqlNode asQuery,
+            SqlNode asTable,
+            @Nullable List<SqlNode> asTableAddColumns,
             boolean isTemporary,
             boolean ifNotExists) {
         super(
@@ -97,8 +103,26 @@ public class SqlCreateTableAs extends SqlCreateTable {
                 comment,
                 isTemporary,
                 ifNotExists);
-        this.asQuery =
-                requireNonNull(asQuery, "As clause is required for CREATE TABLE AS SELECT DDL");
+        if (asQuery == null && asTable == null) {
+            throw new NullPointerException(
+                    "As clause is required for CREATE TABLE AS SELECT or CREATE TABLE AS TABLE DDL");
+        }
+        this.asQuery = asQuery;
+        this.asTable = asTable;
+        if (asTable != null) {
+            if (asTable instanceof SqlIdentifier) {
+                asTableIdentifier = (SqlIdentifier) asTable;
+                asTableHints = SqlNodeList.EMPTY;
+            } else {
+                SqlTableRef ref = (SqlTableRef) asTable;
+                asTableIdentifier = ref.operand(0);
+                asTableHints = ref.operand(1);
+            }
+        } else {
+            asTableIdentifier = null;
+            asTableHints = null;
+        }
+        this.asTableAddColumns = asTableAddColumns;
     }
 
     @Override
@@ -108,10 +132,7 @@ public class SqlCreateTableAs extends SqlCreateTable {
 
     @Override
     public @Nonnull List<SqlNode> getOperandList() {
-        return ImmutableNullableList.<SqlNode>builder()
-                .addAll(super.getOperandList())
-                .add(asQuery)
-                .build();
+        return ImmutableNullableList.of(this, asQuery, asTable);
     }
 
     @Override
@@ -151,13 +172,39 @@ public class SqlCreateTableAs extends SqlCreateTable {
         return asQuery;
     }
 
+    public SqlNode getAsTable() {
+        return asTable;
+    }
+
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         super.unparse(writer, leftPrec, rightPrec);
 
         writer.newlineAndIndent();
         writer.keyword("AS");
-        writer.newlineAndIndent();
-        this.asQuery.unparse(writer, leftPrec, rightPrec);
+        if (asTable != null) {
+            writer.keyword("TABLE");
+            asTable.unparse(writer, leftPrec, rightPrec);
+
+            if (asTableAddColumns != null && asTableAddColumns.size() > 0) {
+                writer.newlineAndIndent();
+                writer.keyword("ADD");
+
+                if (asTableAddColumns.size() == 1) {
+                    asTableAddColumns.get(0).unparse(writer, leftPrec, rightPrec);
+                } else {
+                    SqlWriter.Frame frame = writer.startList("(", ")");
+                    for (SqlNode column : asTableAddColumns) {
+                        SqlUnparseUtils.printIndent(writer);
+                        column.unparse(writer, leftPrec, rightPrec);
+                    }
+                    writer.newlineAndIndent();
+                    writer.endList(frame);
+                }
+            }
+        } else {
+            writer.newlineAndIndent();
+            asQuery.unparse(writer, leftPrec, rightPrec);
+        }
     }
 }
